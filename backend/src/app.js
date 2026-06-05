@@ -35,19 +35,13 @@ app.register(async function sanitizationPlugin(instance, opts) {
   });
 });
 
-// Rate limiter
+// Rate limiter – single instance with high limit
 app.register(require('@fastify/rate-limit'), { max: 1000, timeWindow: '1 minute' });
-app.register(require('@fastify/rate-limit'), {
-  max: 5, timeWindow: '1 minute',
-  keyGenerator: (request) => request.ip + '_auth',
-  onExceeded: (request, reply) => reply.code(429).send({ error: 'Too many requests' }),
-  prefix: '/api/auth',
-});
 
 // Cookie
 app.register(require('@fastify/cookie'));
 
-// CSRF (hook, not a plugin)
+// CSRF (hook, not plugin)
 const { csrfProtection } = require('./middleware/csrf');
 app.addHook('onRequest', csrfProtection);
 
@@ -78,18 +72,12 @@ app.register(require('./modules/reports/routes'), { prefix: '/api/reports' });
 app.register(require('./modules/reports/export'), { prefix: '/api/reports/export' });
 app.register(require('./modules/uptoskills/routes'), { prefix: '/api/uptoskills' });
 
-// Root redirect to docs
-
-// Fallback HTML page in case Swagger UI doesn't load
+// Fallback HTML page
 app.get('/fallback', async (req, reply) => {
-  reply.type('text/html').send(`
-    <html><body style="font-family:sans-serif;padding:2em">
-      <h1>InternOps API is running</h1>
-      <p>Server is healthy. If you see this, the Swagger UI may not have loaded correctly.</p>
-      <a href="/docs">Try Swagger UI</a> | <a href="/health">Health check</a>
-    </body></html>
-  `);
+  reply.type('text/html').send('<html><body style="font-family:sans-serif;padding:2em"><h1>InternOps API is running</h1><p><a href="/docs">Swagger Docs</a></p><p><a href="/health">Health Check</a></p></body></html>');
 });
+
+// Root redirect to docs
 app.get('/', async (req, reply) => reply.redirect('/docs'));
 
 // Health checks
