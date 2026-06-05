@@ -1,491 +1,342 @@
 # InternOps
 
-Enterprise Workforce Management and Intern Operations Platform for structured intern operations, performance management, attendance tracking, task verification, reporting, and hierarchical workforce administration.
+Enterprise Workforce Management and Intern Operations Platform
+
+InternOps is a production-grade workforce management system built for structured intern operations. It centralizes attendance, performance tracking, social task management, proof verification, meetings, notifications, reporting, and audit logging while enforcing strict hierarchical access control.
+
+The platform follows a security-first architecture with Role-Based Access Control (RBAC), ownership validation, JWT authentication, refresh token rotation, Argon2 password hashing, audit logging, and PostgreSQL-backed persistence.
 
 ---
 
-## Overview
+## Executive Summary
 
-InternOps is a centralized workforce management system designed for organizations operating with layered reporting structures.
-
-The platform manages the complete lifecycle of intern operations including:
-
-- User Management
-- Department Management
-- Hierarchy Management
-- Attendance Tracking
-- Performance Ratings
-- Social Task Assignment
-- Proof Submission & Verification
-- Team Meetings
-- Notifications
-- Analytics & Reporting
-- Session Management
-- Audit Logging
-
-The system enforces strict organizational hierarchy:
+InternOps manages the complete lifecycle of workforce operations through a hierarchical structure:
 
 Admin → Senior TL → TL → Captain → Intern
 
-Every request is validated through Authentication, Role-Based Access Control (RBAC), and Ownership Validation.
+The platform ensures that users can only access resources that belong to their authorized hierarchy chain. Every sensitive action is validated, logged, and auditable.
 
 ---
 
-## Core Features
+## Core Capabilities
 
 | Module | Description |
 |----------|-------------|
-| Authentication | Login, JWT, Refresh Tokens, Password Reset |
-| Users | User Lifecycle Management |
-| Departments | Organizational Departments |
-| Hierarchy | Team Structure & Reporting Chains |
-| Attendance | Daily Attendance & Statistics |
-| Ratings | Performance Evaluation |
-| Social Tasks | Assignment & Completion Tracking |
-| Proof Verification | Screenshot Validation Workflow |
-| Meetings | Scheduling & Attendance |
-| Notifications | Event-Based User Alerts |
-| Reports | Operational Reporting |
-| Analytics | Organizational Insights |
-| Sessions | Active Session Management |
-| Audit Logs | Compliance & Traceability |
-| Uptoskills Integration | Future Synchronization Layer |
+| Authentication | JWT authentication with refresh token rotation |
+| User Management | User lifecycle, profile management, account control |
+| Hierarchy Management | Team structure and reporting chain management |
+| Attendance | Single and bulk attendance tracking |
+| Ratings | Historical performance ratings |
+| Social Tasks | Task assignment and completion workflow |
+| Proof Verification | Screenshot-based proof validation |
+| Meetings | Team meeting scheduling and management |
+| Notifications | In-app notification system |
+| Analytics | Attendance and performance insights |
+| Reports | Exportable operational reports |
+| Sessions | Active session management and revocation |
+| Audit Logging | Immutable activity tracking |
+| Security | RBAC, ownership checks, CSRF, rate limiting |
+
+---
+
+## System Architecture
+
+```text
+┌──────────────────────────────────────────────┐
+│                  Frontend                    │
+│          React + Vite + TailwindCSS          │
+└──────────────────────┬───────────────────────┘
+                       │
+                       │ REST API
+                       ▼
+┌──────────────────────────────────────────────┐
+│                Fastify Backend               │
+├──────────────────────────────────────────────┤
+│ Authentication                              │
+│ Authorization (RBAC)                        │
+│ Ownership Validation                        │
+│ Attendance Module                           │
+│ Ratings Module                              │
+│ Social Tasks Module                         │
+│ Meetings Module                             │
+│ Reports & Analytics                         │
+│ Audit Logging                               │
+└──────────────────────┬───────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────────────┐
+│                 PostgreSQL                   │
+│            Raw SQL + pg Driver              │
+└──────────────────────────────────────────────┘
+
+Optional:
+┌──────────────────────────────────────────────┐
+│               Redis (Upstash)               │
+│      Refresh Token & Session Storage        │
+└──────────────────────────────────────────────┘
+```
 
 ---
 
 ## Technology Stack
 
 | Layer | Technology |
-|---------|-----------|
-| Backend | Node.js |
-| Framework | Fastify |
-| Frontend | React 18 |
-| Build Tool | Vite |
-| Styling | TailwindCSS |
+|---------|------------|
+| Backend | Node.js, Fastify |
+| Frontend | React, Vite, TailwindCSS |
 | Database | PostgreSQL |
-| Cache | Redis (Optional) |
-| Authentication | JWT + Argon2 |
+| Query Layer | Raw SQL using pg |
+| Authentication | JWT, Argon2 |
 | Validation | Zod |
+| State Management | Zustand |
+| Data Fetching | TanStack Query |
+| API Client | Axios |
 | Documentation | Swagger/OpenAPI |
-| Logging | Pino |
-| Version Control | Git & GitHub |
+| Cache | Redis (Optional) |
+| DevOps | Git, GitHub, PowerShell |
 
 ---
 
-## Architecture
+## Security Architecture
 
-### High Level Architecture
-
-`	ext
-┌──────────────────────────────────────────┐
-│                 CLIENTS                  │
-├──────────────────────────────────────────┤
-│ React SPA │ Browser │ API Consumers      │
-└────────────────────┬─────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────┐
-│              FASTIFY SERVER              │
-└────────────────────┬─────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────┐
-│           SECURITY PIPELINE              │
-├──────────────────────────────────────────┤
-│ JWT Authentication                       │
-│ RBAC Authorization                       │
-│ Ownership Validation                     │
-│ CSRF Protection                          │
-│ Rate Limiting                            │
-│ Input Sanitization                       │
-└────────────────────┬─────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────┐
-│             BUSINESS MODULES             │
-├──────────────────────────────────────────┤
-│ Users          Attendance                │
-│ Ratings        Meetings                  │
-│ Tasks          Notifications             │
-│ Reports        Analytics                 │
-│ Sessions       Audit                     │
-└────────────────────┬─────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────┐
-│           REPOSITORY LAYER               │
-└────────────────────┬─────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────┐
-│ PostgreSQL │ Redis(Optional) │ FileStore │
-└──────────────────────────────────────────┘
-`
-
----
-
-## Request Lifecycle
-
-`	ext
-Client Request
-      │
-      ▼
-Fastify Route
-      │
-      ▼
-Authentication
-      │
-      ▼
-RBAC Validation
-      │
-      ▼
-Ownership Validation
-      │
-      ▼
-Business Logic
-      │
-      ▼
-Repository Layer
-      │
-      ▼
-PostgreSQL
-      │
-      ▼
-Response
-`
-
----
-
-## Security Model
-
-InternOps follows a defense-in-depth approach.
+InternOps follows a defense-in-depth model.
 
 ### Authentication
 
 - JWT Access Tokens
 - Refresh Token Rotation
-- Session Revocation
-- Password Reset Flow
 - Argon2 Password Hashing
+- Session Revocation
 
 ### Authorization
 
 - Role-Based Access Control
 - Ownership Validation
-- Hierarchical Permission Checks
+- Hierarchical Permission Enforcement
 
-### Security Controls
+### Protection Layers
 
 - Helmet Security Headers
 - CSRF Protection
 - Rate Limiting
 - Input Sanitization
-- SQL Injection Prevention
-- Brute Force Protection
+- Brute Force Prevention
 - Audit Logging
-- Soft Deletes
 
 ---
 
-## Hierarchy Model
+## Role Hierarchy
 
-| Role | Responsibility |
-|--------|---------------|
-| Admin | Full System Control |
-| Senior TL | Department Oversight |
-| TL | Team Management |
-| Captain | Direct Intern Supervision |
-| Intern | Individual Operations |
+| Role | Access Level |
+|--------|-------------|
+| Admin | Full platform control |
+| Senior TL | Department management |
+| TL | Team management |
+| Captain | Direct intern supervision |
+| Intern | Self-service access |
 
-Ownership validation ensures users can access only resources inside their reporting chain.
+Hierarchy ownership is enforced recursively to prevent unauthorized access.
+
+---
+
+## Database Overview
+
+### Primary Tables
+
+| Table | Purpose |
+|---------|---------|
+| users | User accounts |
+| departments | Department records |
+| attendance | Daily attendance |
+| ratings | Performance ratings |
+| social_tasks | Task assignments |
+| proof_submissions | Uploaded proofs |
+| notifications | User notifications |
+| meetings | Meeting schedules |
+| meeting_attendees | Meeting participants |
+| audit_logs | Audit records |
+| refresh_tokens | Session tokens |
+| password_reset_tokens | Password resets |
+| login_attempts | Security tracking |
+
+### Design Principles
+
+- UUID Primary Keys
+- Foreign Key Constraints
+- Indexed Queries
+- Soft Deletes
+- Transaction Support
+- JSONB Audit Records
 
 ---
 
 ## Major Modules
 
 ### Authentication
+Login, logout, refresh token rotation, password reset.
 
-- Login
-- Logout
-- Refresh Tokens
-- Password Reset
-- Session Revocation
-
-### User Management
-
-- Registration
-- Profile Updates
-- Suspension
-- Activation
-- Soft Delete
+### Users
+User management, profile updates, account lifecycle.
 
 ### Attendance
-
-- Single Attendance
-- Bulk Attendance
-- Monthly Statistics
-- Attendance History
+Single attendance, bulk attendance, statistics.
 
 ### Ratings
-
-- Historical Ratings
-- Score Tracking
-- Remarks
-- Performance Analytics
+Historical ratings with manager validation.
 
 ### Social Tasks
-
-- Task Creation
-- Deadlines
-- Assignment Tracking
-- Completion Monitoring
-
-### Proof Verification
-
-- Screenshot Upload
-- Verification Workflow
-- Status Tracking
+Task creation, assignment, proof submission, verification.
 
 ### Meetings
+Meeting scheduling and attendee management.
 
-- Meeting Scheduling
-- Attendee Management
-- Visibility Controls
-
-### Notifications
-
-- Real-Time Events
-- Read/Unread Tracking
-- Bulk Read Operations
+### Analytics
+Attendance trends, top performers, operational insights.
 
 ### Reports
+CSV exports and summary reports.
 
-- Attendance Summary
-- Ratings Summary
-- Task Completion
-- CSV Export
+### Sessions
+Device tracking and session revocation.
 
-### Audit Logs
-
-- User Actions
-- Resource Changes
-- IP Tracking
-- User Agent Tracking
-
----
-
-## Database Overview
-
-### Core Tables
-
-| Table | Purpose |
-|---------|---------|
-| users | Platform Users |
-| departments | Departments |
-| attendance | Attendance Records |
-| ratings | Performance Ratings |
-| social_tasks | Task Management |
-| proof_submissions | Verification Workflow |
-| notifications | User Notifications |
-| meetings | Scheduled Meetings |
-| meeting_attendees | Meeting Participants |
-| refresh_tokens | Session Storage |
-| login_attempts | Brute Force Protection |
-| audit_logs | Security Audit Trail |
-
-### Database Design Principles
-
-- UUID Primary Keys
-- Foreign Key Constraints
-- Soft Deletes
-- Indexed Relationships
-- Parameterized Queries
-- Transaction Support
-
----
-
-## API Modules
-
-| Module | Endpoint |
-|----------|----------|
-| Auth | /api/auth |
-| Users | /api/users |
-| Departments | /api/departments |
-| Hierarchy | /api/hierarchy |
-| Attendance | /api/attendance |
-| Ratings | /api/ratings |
-| Tasks | /api/tasks |
-| Proofs | /api/proofs |
-| Meetings | /api/meetings |
-| Notifications | /api/notifications |
-| Analytics | /api/analytics |
-| Reports | /api/reports |
-| Sessions | /api/sessions |
-| Audit | /api/audit |
-| Uptoskills | /api/uptoskills |
-
-Swagger Documentation:
-
-http://localhost:5000/docs
+### Audit
+Immutable logging of sensitive actions.
 
 ---
 
 ## Project Structure
 
-`	ext
-InternOps
+```text
+InternOps/
 │
-├── backend
-│   ├── migrations
-│   ├── seeds
-│   ├── src
-│   │   ├── config
-│   │   ├── middleware
-│   │   ├── modules
-│   │   ├── services
-│   │   ├── utils
+├── backend/
+│   ├── migrations/
+│   ├── seeds/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── middleware/
+│   │   ├── modules/
+│   │   ├── services/
+│   │   ├── utils/
 │   │   └── app.js
 │   └── package.json
 │
-├── frontend
-│   ├── public
-│   ├── src
-│   │   ├── components
-│   │   ├── pages
-│   │   ├── store
-│   │   └── lib
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── store/
+│   │   └── lib/
 │   └── package.json
 │
-├── docs
-├── scripts
+├── docs/
+├── scripts/
 └── README.md
-`
+```
 
 ---
 
 ## Environment Variables
 
-| Variable | Required |
-|-----------|-----------|
-| DATABASE_URL | Yes |
-| JWT_SECRET | Yes |
-| PORT | No |
-| NODE_ENV | No |
-| CORS_ORIGIN | No |
-| UPSTASH_REDIS_REST_URL | No |
-| UPSTASH_REDIS_REST_TOKEN | No |
-| UPTOSKILLS_API_KEY | No |
-| UPTOSKILLS_BASE_URL | No |
+| Variable | Purpose |
+|------------|----------|
+| DATABASE_URL | PostgreSQL connection |
+| JWT_SECRET | JWT signing secret |
+| PORT | Application port |
+| NODE_ENV | Environment mode |
+| CORS_ORIGIN | Allowed frontend origin |
+| UPSTASH_REDIS_REST_URL | Redis URL |
+| UPSTASH_REDIS_REST_TOKEN | Redis Token |
+| UPTOSKILLS_BASE_URL | Future integration |
+| UPTOSKILLS_API_KEY | Future integration |
 
 ---
 
 ## Quick Start
 
+### Clone Repository
+
+    git clone https://github.com/rajat-wyrm/InternOps.git
+    cd InternOps
+
 ### Install Dependencies
 
-`ash
-git clone https://github.com/rajat-wyrm/InternOps.git
+    cd backend
+    npm install
 
-cd InternOps/backend
-npm install
-
-cd ../frontend
-npm install
-`
+    cd ../frontend
+    npm install
 
 ### Configure Environment
 
-`ash
-cp backend/.env.example backend/.env
-`
+    copy .env.example .env
 
-### Run Migrations
+Update environment variables.
 
-`ash
-cd backend
+### Run Database
 
-npm run migrate
-npm run seed
-`
+    cd backend
+    npm run migrate
+    npm run seed
 
 ### Start Backend
 
-`ash
-npm run dev
-`
+    npm run dev
 
 ### Start Frontend
 
-`ash
-cd frontend
+    cd frontend
+    npm run dev
 
-npm run dev
-`
+Backend:
+http://localhost:5000
+
+Frontend:
+http://localhost:5173
+
+Swagger:
+http://localhost:5000/docs
 
 ---
 
 ## Deployment
 
-### Recommended Stack
+Recommended Production Stack
 
 - Ubuntu Server
-- Node.js 18+
+- Nginx Reverse Proxy
+- PM2 Process Manager
 - PostgreSQL
 - Redis
-- Nginx
-- PM2
+- SSL/TLS Certificates
 
-### PM2
+Example:
 
-`ash
-pm2 start backend/src/app.js --name internops
-pm2 save
-pm2 startup
-`
-
----
-
-## Performance
-
-- PostgreSQL Connection Pooling
-- Indexed Foreign Keys
-- Transaction-Based Bulk Operations
-- JWT Stateless Authentication
-- Redis Session Caching
-- Optimized Repository Pattern
-
----
-
-## Scalability
-
-InternOps is designed to scale through:
-
-- Horizontal Backend Scaling
-- Database Read Replicas
-- Redis Caching Layer
-- CDN Frontend Delivery
-- External Object Storage
-- Load Balancer Integration
+    pm2 start backend/src/app.js --name internops
+    pm2 save
 
 ---
 
 ## Future Roadmap
 
-- Uptoskills Synchronization
-- Email Notifications
+- Uptoskills API Integration
+- Real-Time Notifications
 - Mobile Application
-- Real-Time WebSockets
-- Advanced Analytics
-- Department Dashboards
-- AI-Based Performance Insights
+- Advanced Analytics Dashboard
+- S3 Object Storage
+- Multi-Tenant Architecture
+- Organization Management
+- Automated Reporting
 
 ---
 
 ## License
 
-Proprietary Software.
+Proprietary Software
 
-All Rights Reserved.
+All rights reserved.
+
+Unauthorized use, distribution, or modification is prohibited.
 
 ---
 
@@ -494,4 +345,7 @@ All Rights Reserved.
 Rajat Wyrm
 
 GitHub:
+https://github.com/rajat-wyrm
+
+Repository:
 https://github.com/rajat-wyrm/InternOps
