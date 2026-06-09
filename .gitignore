@@ -37,3 +37,6 @@ fix_async_done.js
 
 # Docker volumes
 postgres_data/
+
+# Backup files
+*.bak
