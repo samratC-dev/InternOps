@@ -1,4 +1,4 @@
-﻿name: InternOps CI Pipeline
+name: InternOps CI
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
 
     services:
@@ -26,13 +26,14 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/internops_test
-      JWT_SECRET: ci-test-secret-key-do-not-use-in-prod
       NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/internops_test
+      JWT_SECRET: ci-test-secret-do-not-use-in-prod
       PORT: 5000
+      CORS_ORIGIN: http://localhost:5173
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -45,33 +46,17 @@ jobs:
       - name: Install backend dependencies
         run: cd backend && npm ci
 
-      - name: Run database migrations
+      - name: Run migrations
         run: cd backend && npm run migrate
 
       - name: Seed test data
         run: cd backend && npm run seed
 
-      - name: Run tests
-        run: cd backend && npm test -- --forceExit --detectOpenHandles || true
+      - name: Run Jest tests
+        run: cd backend && npm test -- --forceExit --detectOpenHandles --runInBand
 
-      - name: Lint (placeholder)
-        run: echo "Linting step – configure ESLint as needed"
-
-  frontend-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend dependencies
+      - name: Install frontend dependencies (optional)
         run: cd frontend && npm ci
 
-      - name: Build frontend
+      - name: Build frontend (optional)
         run: cd frontend && npm run build
