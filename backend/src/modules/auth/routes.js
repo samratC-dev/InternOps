@@ -58,7 +58,7 @@ const { email, password } = result.data;
   });
 
   // Get CSRF token
-  fastify.get('/csrf-token', async (req, reply) => {
+  fastify.get('/csrf-token', { preHandler: [auth] }, async (req, reply) => {
     const { generateToken } = require('../../middleware/csrf');
     return { csrfToken: generateToken() };
   });
