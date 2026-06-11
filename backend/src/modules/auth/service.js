@@ -45,22 +45,69 @@ async function login(email, password, ip, userAgent) {
 
 async function refreshTokens(token, ip) {
   let decoded;
-  try { decoded = verifyRefreshToken(token); } catch { throw new UnauthorizedError('Invalid refresh token'); }
+
+  try {
+    decoded = verifyRefreshToken(token);
+  } catch {
+    throw new UnauthorizedError('Invalid refresh token');
+  }
+
   const hash = hashToken(token);
-  const pool = require('../../config/db');
-  const { rows } = await pool.query('SELECT * FROM refresh_tokens WHERE token_hash=$1 AND revoked=FALSE AND expires_at>NOW()', [hash]);
-  if(rows.length===0) throw new UnauthorizedError('Token revoked/expired');
+  const storedToken = await repo.getRefreshTokenRedis(hash);
+
+  if (!storedToken) {
+    throw new UnauthorizedError('Token revoked/expired');
+  }
+
   await repo.revokeRefreshTokenRedis(hash);
+
   const user = await repo.findById(decoded.id);
-  if(!user||user.suspended) throw new UnauthorizedError('User not found/suspended');
+
+  if (!user || user.suspended) {
+    throw new UnauthorizedError('User not found/suspended');
+  }
+
   const newAccess = generateAccessToken(user);
   const newRefresh = generateRefreshToken(user);
-  const newExpiry = new Date(Date.now()+7*24*60*60*1000);
+  const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
   await repo.storeRefreshTokenRedis(user.id, hashToken(newRefresh), newExpiry);
-  return { accessToken:newAccess, refreshToken:newRefresh };
+
+  return {
+    accessToken: newAccess,
+    refreshToken: newRefresh,
+  };
 }
+async function logout(
+  token,
+  authenticatedUserId,
+  ip,
+  userAgent
+) {
+  let decoded;
 
-async function logout(token) { await repo.revokeRefreshTokenRedis(hashToken(token)); }
+  try {
+    decoded = verifyRefreshToken(token);
+  } catch {
+    throw new UnauthorizedError('Invalid refresh token');
+  }
 
+  if (String(decoded.id) !== String(authenticatedUserId)) {
+    throw new UnauthorizedError(
+      'Token does not belong to authenticated user'
+    );
+  }
+
+  await repo.revokeRefreshTokenRedis(
+    hashToken(token)
+  );
+
+  await createAuditLog({
+    userId: authenticatedUserId,
+    action: 'LOGOUT',
+    ipAddress: ip,
+    userAgent
+  });
+}
 module.exports = { register, login, refreshTokens, logout };
 
