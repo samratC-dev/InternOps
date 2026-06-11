@@ -11,7 +11,7 @@ async function routes(fastify) {
     const schema = z.object({
       email: z.string().email(),
       password: z.string().min(8),
-      role: z.enum(['ADMIN','SENIOR_TL','TL','CAPTAIN','INTERN']),
+      role: z.enum(['ADMIN', 'SENIOR_TL', 'TL', 'CAPTAIN', 'INTERN']),
       managerId: z.string().uuid().optional(),
       departmentId: z.string().uuid().optional(),
       fullName: z.string().optional()
@@ -24,17 +24,17 @@ async function routes(fastify) {
   // Login
   fastify.post('/login', { preHandler: [bruteForceCheck], schema: { tags: ['Authentication'], description: 'Login with email and password' } }, async (req, reply) => {
     const result = z.object({
-  email: z.string().email(),
-  password: z.string()
-}).safeParse(req.body);
+      email: z.string().email(),
+      password: z.string()
+    }).safeParse(req.body);
 
-if (!result.success) {
-  return reply.status(400).send({
-    error: result.error.flatten()
-  });
-}
+    if (!result.success) {
+      return reply.status(400).send({
+        error: result.error.flatten()
+      });
+    }
 
-const { email, password } = result.data;
+    const { email, password } = result.data;
     const loginResult = await service.login(email, password, req.ip, req.headers['user-agent']);
     reply.setCookie('refreshToken', loginResult.refreshToken, { httpOnly: true, secure: false, sameSite: 'strict', path: '/api/auth/refresh' });
     return { accessToken: loginResult.accessToken, refreshToken: loginResult.refreshToken, user: loginResult.user };
@@ -58,7 +58,7 @@ const { email, password } = result.data;
   });
 
   // Get CSRF token
-  fastify.get('/csrf-token', { preHandler: [auth] }, async (req, reply) => {
+  fastify.get('/csrf-token', async (req, reply) => {
     const { generateToken } = require('../../middleware/csrf');
     return { csrfToken: generateToken() };
   });
