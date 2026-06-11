@@ -1,4 +1,12 @@
-﻿require("dotenv").config();
+// loadEnvironment();
+require("dotenv").config();
+
+// validateEnvironment();
+const validateEnv = require("./config/validateEnv");
+validateEnv();
+
+// initializeDatabase();
+const db = require("./config/db");
 
 const Fastify = require("fastify");
 const path = require("path");
@@ -16,6 +24,7 @@ const app = Fastify({
       : true,
   genReqId: () => uuidv4(),
 });
+// registerPlugins();
 
 app.register(require("@fastify/cors"), {
   origin: config.nodeEnv === "production" ? config.corsOrigin : true,
@@ -85,11 +94,10 @@ app.register(require("@fastify/swagger-ui"), {
 app.register(require("./modules/auth/routes"), {
   prefix: "/api/auth",
 });
-
-app.register(require("./modules/users/routes"), {
-  prefix: "/api/users",
-});
-
+app.register(require("@fastify/swagger-ui"), { routePrefix: "/docs" });
+// registerRoutes();
+app.register(require("./modules/auth/routes"), { prefix: "/api/auth" });
+app.register(require("./modules/users/routes"), { prefix: "/api/users" });
 app.register(require("./modules/departments/routes"), {
   prefix: "/api/departments",
 });
@@ -219,6 +227,7 @@ app.setErrorHandler((error, request, reply) => {
 if (process.env.NODE_ENV !== 'test') {
   require('./utils/cron').setupCronJobs();
 }
+// startServer();
 
 const start = async () => {
   try {
