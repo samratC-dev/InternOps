@@ -6,9 +6,6 @@ const auth = require('../../middleware/auth');
 const { extractRequestInfo } = require('../../utils/audit');
 const isProduction = process.env.NODE_ENV === 'production';
 async function routes(fastify) {
-  
-
-
   // Refresh token
   fastify.post(
     '/refresh',
@@ -63,14 +60,10 @@ async function routes(fastify) {
   );
 
   // Get CSRF token
-  fastify.get(
-    '/csrf-token',
-    { preHandler: [auth] },
-    async (req, reply) => {
-      const { generateToken } = require('../../middleware/csrf');
-      return { csrfToken: generateToken(req.user.id) };
-    }
-  );
+  fastify.get('/csrf-token', { preHandler: [auth] }, async (req, reply) => {
+    const { generateToken } = require('../../middleware/csrf');
+    return { csrfToken: generateToken(req.user.id) };
+  });
 
   // Verify email
   fastify.post('/verify-email', async (req, reply) => {
