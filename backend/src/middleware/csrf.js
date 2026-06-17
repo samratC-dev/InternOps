@@ -47,9 +47,11 @@ const EXEMPT = [
   '/api/auth/reset-password',
 ];
 
-function csrfProtection(request, reply, done) {
-  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return done();
-  if (EXEMPT.some((p) => request.url.startsWith(p))) return done();
+const csrfMiddleware = async (request, reply) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return;
+  if (!request.url) return;
+  if (EXEMPT.some((p) => request.url.startsWith(p))) return;
+
   const token = request.headers['x-csrf-token'];
   const userId =
     request.user?.id ||
@@ -65,7 +67,7 @@ function csrfProtection(request, reply, done) {
   if (!token || !verifyToken(token, userId)) {
     return reply.status(403).send({ error: 'CSRF token missing or invalid' });
   }
-  done();
-}
+};
+const csrfProtection = csrfMiddleware;
 
-module.exports = { generateToken, csrfProtection };
+module.exports = { generateToken, csrfMiddleware, csrfProtection };

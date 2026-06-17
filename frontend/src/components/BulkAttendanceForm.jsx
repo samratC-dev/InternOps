@@ -29,6 +29,10 @@ export default function BulkAttendanceForm() {
     onError: (err) => setError(err.response?.data?.error || 'Bulk mark failed'),
   });
 
+  const allSelected =
+    reports?.length > 0 && selectedUsers.length === reports.length;
+  const toggleAll = () =>
+    setSelectedUsers(allSelected ? [] : reports.map((u) => u.id));
   const toggleUser = (id) =>
     setSelectedUsers((p) =>
       p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
@@ -38,6 +42,9 @@ export default function BulkAttendanceForm() {
     e.preventDefault();
     if (selectedUsers.length === 0)
       return setError('Select at least one member');
+    if (date > new Date().toISOString().slice(0, 10)) {
+      return setError('Future dates cannot be selected for bulk operations');
+    }
     bulkMutation.mutate({
       entries: selectedUsers.map((uid) => ({
         user_id: uid,
@@ -57,9 +64,18 @@ export default function BulkAttendanceForm() {
       {msg && <p className="text-green-600 text-sm mb-2">{msg}</p>}
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <label className="text-xs text-gray-500">
-            Select members ({selectedUsers.length} selected)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-gray-500">
+              Select members ({selectedUsers.length} selected)
+            </label>
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="text-xs text-indigo-600 hover:underline"
+            >
+              {allSelected ? 'Deselect All' : 'Select All'}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2 mt-1 max-h-36 overflow-auto p-1">
             {reports?.map((u) => (
               <button
@@ -78,6 +94,7 @@ export default function BulkAttendanceForm() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
             required
           />
           <Select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -91,11 +108,17 @@ export default function BulkAttendanceForm() {
             onChange={(e) => setRemarks(e.target.value)}
           />
         </div>
-        <Btn type="submit" variant="primary" disabled={bulkMutation.isPending}>
-          {bulkMutation.isPending
-            ? 'Marking…'
-            : `Bulk mark ${selectedUsers.length || ''}`}
-        </Btn>
+        <div className="pt-1">
+          <Btn
+            type="submit"
+            variant="primary"
+            disabled={bulkMutation.isPending}
+          >
+            {bulkMutation.isPending
+              ? 'Marking…'
+              : `Bulk mark ${selectedUsers.length || ''}`}
+          </Btn>
+        </div>
       </form>
     </Card>
   );

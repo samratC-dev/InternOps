@@ -25,7 +25,7 @@ app.register(require('@fastify/cors'), {
 app.register(require('@fastify/helmet'));
 
 app.register(async function sanitizationPlugin(instance) {
-  instance.addHook('onRequest', async (request) => {
+  instance.addHook('preValidation', async (request) => {
     const sanitize = (obj) => {
       if (!obj || typeof obj !== 'object') return;
 
@@ -33,7 +33,11 @@ app.register(async function sanitizationPlugin(instance) {
         const val = obj[key];
 
         if (typeof val === 'string') {
-          obj[key] = val.replace(/<[^>]*>/g, '').replace(/['"]/g, '');
+          // Strip HTML tags to mitigate XSS. Quotes are intentionally
+          // preserved: SQL injection is handled by parameterized queries,
+          // and stripping quotes corrupts valid input such as passwords
+          // and base64 CSRF tokens.
+          obj[key] = val.replace(/<[^>]*>/g, '');
         } else if (typeof val === 'object') {
           sanitize(val);
         }
@@ -54,7 +58,7 @@ app.register(require('@fastify/rate-limit'), {
 app.register(require('@fastify/cookie'));
 
 const { csrfProtection } = require('./middleware/csrf');
-app.addHook('onRequest', csrfProtection);
+app.register(csrfProtection);
 
 app.register(require('@fastify/multipart'), {
   limits: {
@@ -182,7 +186,7 @@ app.get('/health', async (req, reply) => {
 
 app.get('/health/db', async (req, reply) => {
   try {
-    await require('./config/db').query('SELECT 1');
+    await pool.query('SELECT 1');
     reply.send({
       status: 'ok',
       db: 'connected',
@@ -198,7 +202,7 @@ app.get('/health/db', async (req, reply) => {
 app.get('/health/full', async (req, reply) => {
   const checks = { db: false, redis: false };
   try {
-    await require('./config/db').query('SELECT 1');
+    await pool.query('SELECT 1');
     checks.db = true;
   } catch {}
 
